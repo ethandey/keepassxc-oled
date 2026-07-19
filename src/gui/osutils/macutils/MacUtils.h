@@ -55,6 +55,9 @@ public:
     void registerNativeEventFilter() override;
 
     void configureWindowAndHelpMenus(QMainWindow* mainWindow, QMenu* helpMenu);
+    // OLED fork
+    void enableOledChrome();
+    void applyOledWindowChrome(QWindow* window);
 
     bool registerGlobalShortcut(const QString& name,
                                 Qt::Key key,

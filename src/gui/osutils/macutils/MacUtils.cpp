@@ -208,6 +208,16 @@ void MacUtils::configureWindowAndHelpMenus(QMainWindow* mainWindow, QMenu* helpM
     return m_appkit->configureWindowAndHelpMenus(mainWindow, helpMenu);
 }
 
+void MacUtils::enableOledChrome()
+{
+    m_appkit->enableOledChrome();
+}
+
+void MacUtils::applyOledWindowChrome(QWindow* window)
+{
+    m_appkit->applyOledWindowChrome(window);
+}
+
 bool MacUtils::registerGlobalShortcut(const QString& name, Qt::Key key, Qt::KeyboardModifiers modifiers, QString* error)
 {
     auto keycode = qtToNativeKeyCode(key);

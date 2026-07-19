@@ -160,6 +160,8 @@ void Application::bootstrap(const QString& uiLanguage)
 #ifdef Q_OS_MACOS
     // Don't show menu icons on OSX
     QApplication::setAttribute(Qt::AA_DontShowIconsInMenus);
+    // OLED fork: pure-black title bars / traffic-light strip to match dark UI
+    macUtils()->enableOledChrome();
 #endif
 }
 

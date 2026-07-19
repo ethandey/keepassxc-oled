@@ -1386,6 +1386,20 @@ void MainWindow::showEvent(QShowEvent* event)
     QTimer::singleShot(50, this, [=] { setProperty("windowOpacity", 1.0); });
 #endif
 
+#ifdef Q_OS_MACOS
+    // OLED fork: re-apply pure-black title bar after the native window exists
+    if (windowHandle()) {
+        macUtils()->applyOledWindowChrome(windowHandle());
+    } else {
+        // winId may not exist until after first show — retry next tick
+        QTimer::singleShot(0, this, [this]() {
+            if (windowHandle()) {
+                macUtils()->applyOledWindowChrome(windowHandle());
+            }
+        });
+    }
+#endif
+
     // Restore geometry and window state only on the first showEvent to prevent issues with minimized tray startup
     if (!m_windowInformationRestored) {
         restoreWindowInformation();

@@ -253,6 +253,55 @@
     NSApp.helpMenu = helpMenu->toNSMenu();
 }
 
+// OLED fork: force dark aqua app-wide and pure-black titled windows
+- (void) enableOledChrome
+{
+    // Force dark system chrome (traffic lights, menus) regardless of OS light mode
+    NSApp.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(oledWindowDidBecomeKey:)
+                                                 name:NSWindowDidBecomeKeyNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(oledWindowDidBecomeKey:)
+                                                 name:NSWindowDidBecomeMainNotification
+                                               object:nil];
+
+    for (NSWindow* window in NSApp.windows) {
+        [self applyOledWindowChrome:window];
+    }
+}
+
+- (void) oledWindowDidBecomeKey:(NSNotification*) notification
+{
+    if ([notification.object isKindOfClass:[NSWindow class]]) {
+        [self applyOledWindowChrome:notification.object];
+    }
+}
+
+- (void) applyOledWindowChrome:(NSWindow*) window
+{
+    if (!window) {
+        return;
+    }
+
+    // Only style standard titled windows (main window, dialogs) — not tooltips/popovers
+    if ((window.styleMask & NSWindowStyleMaskTitled) == 0) {
+        return;
+    }
+
+    window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+
+    // Transparent titlebar draws using the window background (pure black below)
+    // Avoid FullSizeContentView so Qt layout of toolbars/menus stays correct.
+    window.titlebarAppearsTransparent = YES;
+    window.backgroundColor = [NSColor blackColor];
+
+    // Keep the window title text visible in the title bar
+    window.titleVisibility = NSWindowTitleVisible;
+}
+
 @end
 
 
@@ -270,6 +319,7 @@ AppKit::~AppKit()
 {
     [[[NSWorkspace sharedWorkspace] notificationCenter] removeObserver:static_cast<id>(self)];
     [[NSDistributedNotificationCenter defaultCenter] removeObserver:static_cast<id>(self)];
+    [[NSNotificationCenter defaultCenter] removeObserver:static_cast<id>(self)];
     [NSApp removeObserver:static_cast<id>(self) forKeyPath:@"effectiveAppearance"];
     [static_cast<id>(self) dealloc];
 }
@@ -339,4 +389,20 @@ void AppKit::setWindowSecurity(QWindow* window, bool state)
 void AppKit::configureWindowAndHelpMenus(QMainWindow* window, QMenu* helpMenu)
 {
     [static_cast<id>(self) configureWindowAndHelpMenus:window helpMenu:helpMenu];
+}
+
+void AppKit::enableOledChrome()
+{
+    [static_cast<id>(self) enableOledChrome];
+}
+
+void AppKit::applyOledWindowChrome(QWindow* window)
+{
+    if (!window) {
+        return;
+    }
+    auto view = reinterpret_cast<NSView*>(window->winId());
+    if (view && view.window) {
+        [static_cast<id>(self) applyOledWindowChrome:view.window];
+    }
 }
