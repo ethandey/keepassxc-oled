@@ -61,3 +61,13 @@ First unlock after every app quit still requires the master password; subsequent
 - Does not modify stock KeePassXC, SIP, or system frameworks.
 - Database format is standard `.kdbx` (compatible with stock KeePassXC).
 - Keep the master password; biometrics are a convenience unlock only.
+
+## Deploy after rebuild
+
+```bash
+cmake --build build -j"$(sysctl -n hw.ncpu)"
+./scripts/deploy-macos-oled.sh
+```
+
+This rewrites plugin dylibs to use the app’s Frameworks (required so Auto-Type
+does not load a second copy of Qt and crash).
