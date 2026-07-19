@@ -69,9 +69,10 @@ int main(int argc, char** argv)
     Application app(argc, argv);
     // don't set organizationName as that changes the return value of
     // QStandardPaths::writableLocation(QDesktopServices::DataLocation)
-    Application::setApplicationName("KeePassXC");
+    // OLED fork: separate Application Support / config from stock KeePassXC
+    Application::setApplicationName("KeePassXC-OLED");
     Application::setApplicationVersion(KEEPASSXC_VERSION);
-    app.setProperty("KPXC_QUALIFIED_APPNAME", "org.keepassxc.KeePassXC");
+    app.setProperty("KPXC_QUALIFIED_APPNAME", "org.keepassxc.KeePassXC-OLED");
 
     // HACK: Prevent long-running threads from deadlocking the program with only 1 CPU
     // See https://github.com/keepassxreboot/keepassxc/issues/10391

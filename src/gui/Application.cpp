@@ -66,7 +66,8 @@ Application::Application(int& argc, char** argv)
 #endif
 
     // Build identifier
-    auto identifier = QStringLiteral("keepassxc");
+    // OLED fork: distinct lock/socket so this build can run alongside stock KeePassXC
+    auto identifier = QStringLiteral("keepassxc-oled");
     auto username = Tools::cleanUsername();
     if (!username.isEmpty()) {
         identifier += QChar('-') + username;

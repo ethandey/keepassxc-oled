@@ -9,7 +9,7 @@
   <key>CFBundleDevelopmentRegion</key>
   <string>English</string>
   <key>CFBundleDisplayName</key>
-  <string>${PROJECT_NAME}</string>
+  <string>KeePassXC OLED</string>
   <key>CFBundleExecutable</key>
   <string>${PROGNAME}</string>
   <key>CFBundleIconFile</key>
@@ -17,11 +17,11 @@
   <key>CFBundleIconName</key>
   <string>keepassxc</string>
   <key>CFBundleIdentifier</key>
-  <string>org.keepassxc.keepassxc</string>
+  <string>org.keepassxc.keepassxc-oled</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>${PROJECT_NAME}</string>
+  <string>KeePassXC OLED</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleVersion</key>

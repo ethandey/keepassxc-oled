@@ -447,9 +447,10 @@ if(WIN32)
 endif()
 
 if(APPLE AND WITH_APP_BUNDLE OR WIN32)
-    set(PROGNAME KeePassXC)
+    # OLED fork: distinct app name so we can install side-by-side with stock KeePassXC
+    set(PROGNAME KeePassXC-OLED)
 else()
-    set(PROGNAME keepassxc)
+    set(PROGNAME keepassxc-oled)
 endif()
 
 if(WIN32)

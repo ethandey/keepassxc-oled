@@ -114,7 +114,8 @@ static const QHash<Config::ConfigKey, ConfigDirective> configStrings = {
     {Config::GUI_HidePasswords, {QS("GUI/HidePasswords"), Roaming, true}},
     {Config::GUI_ColorPasswords, {QS("GUI/ColorPasswords"), Roaming, false}},
     {Config::GUI_MonospaceNotes, {QS("GUI/MonospaceNotes"), Roaming, false}},
-    {Config::GUI_ApplicationTheme, {QS("GUI/ApplicationTheme"), Roaming, QS("auto")}},
+    // OLED fork: default to dark (pure-black palette) instead of system auto
+    {Config::GUI_ApplicationTheme, {QS("GUI/ApplicationTheme"), Roaming, QS("dark")}},
     {Config::GUI_CompactMode, {QS("GUI/CompactMode"), Roaming, false}},
     {Config::GUI_CheckForUpdates, {QS("GUI/CheckForUpdates"), Roaming, true}},
     {Config::GUI_CheckForUpdatesNextCheck, {QS("GUI/CheckForUpdatesNextCheck"), Local, 0}},

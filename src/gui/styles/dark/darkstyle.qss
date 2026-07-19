@@ -1,39 +1,61 @@
+/* OLED pure-black dark theme overrides */
+
 DatabaseWidget:!active,
 DatabaseWidget #groupView:!active, DatabaseWidget #tagView:!active,
 EntryPreviewWidget *:!active[blendIn="true"] {
-    background-color: #404042;
+    background-color: #000000;
 }
 
 DatabaseWidget:disabled,
 DatabaseWidget #groupView:disabled, DatabaseWidget #tagView:disabled,
 EntryPreviewWidget *:disabled[blendIn="true"] {
-    background-color: #424242;
+    background-color: #0A0A0A;
 }
 
 QMenu {
-    border: 1px solid #56565A;
+    border: 1px solid #1A1A1A;
+    background-color: #000000;
 }
 
 QMenu::separator {
     height: 1px;
-    background-color: #56565A;
+    background-color: #1A1A1A;
 }
 
 QPushButton:!default:hover {
-    /* Using slightly darker shade from palette(button) */
-    background: #252528;
+    background: #1A1A1A;
 }
 
 QPushButton:default:hover, QPushButton:checked:hover {
-    /* Using slightly lighter shade from palette(highlight) */
-    background: #2E582E;
+    background: #2E7D32;
 }
 
 QToolTip {
-    color: #BFBFBF;
-    background-color: #2D532D;
+    color: #D0D0D0;
+    background-color: #0D1F0D;
+    border: 1px solid #1B5E20;
 }
 
 QGroupBox {
-    background-color: palette(light);
+    background-color: #0A0A0A;
+}
+
+QToolBar {
+    background-color: #000000;
+    border: none;
+}
+
+QStatusBar {
+    background-color: #000000;
+}
+
+QHeaderView::section {
+    background-color: #0A0A0A;
+    border: 1px solid #1A1A1A;
+}
+
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QComboBox {
+    background-color: #0A0A0A;
+    border: 1px solid #1A1A1A;
+    selection-background-color: #1B5E20;
 }
