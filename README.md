@@ -10,22 +10,18 @@ Installed as **`/Applications/KeePassXC-OLED.app`** only. Stock KeePassXC is rem
 
 ## Is this “just a theme dropdown”?
 
-**No.** Stock KeePassXC only has:
+**Yes for the feature** (how you’d contribute it). **Local packaging is extra.**
 
 | Setting | What it does |
 |---------|----------------|
-| View → Theme → **Dark** | Built-in dark **gray** palette (`#3B3B3D` chrome, not pure black) |
-| View → Theme → Light / Classic / Auto | Other stock looks |
+| View → Theme → **Dark** | Stock gray dark (**unchanged**) |
+| View → Theme → **Dark (OLED)** | Pure-black UI + black macOS title bar; **applies live** (no restart) |
+| Light / Auto / Classic | Unchanged (Classic still asks to restart) |
 
-There is **no** OLED / pure-black option in settings.  
-What we did is a **forked app** with code changes to:
+Config: `GUI/ApplicationTheme=oled`
 
-1. **Dark palette + QSS** → true `#000000` / near-black surfaces  
-2. **macOS title bar** → transparent black traffic-light strip  
-3. **App identity** → `KeePassXC-OLED` so it can sit next to (or replace) stock  
-4. **Update checks** → compiled **off** (`WITH_XC_UPDATECHECK=OFF`)
-
-So: theme dropdown still exists, but **Dark** in *this* build is our OLED palette, not stock gray.
+**Upstream PR surface:** `OledStyle` + QSS + menu item + `applyTheme("oled")` + optional macOS title-bar hook.  
+**Not for PR:** app rename, update-check off, deploy script (those are local only).
 
 ---
 
@@ -103,16 +99,21 @@ More detail: [OLED.md](./OLED.md)
 
 ---
 
-## OLED-specific code (diff surface)
+## Contribution-shaped code (theme)
 
 | File | Role |
 |------|------|
-| `src/gui/styles/dark/DarkStyle.cpp` | Pure-black palette |
-| `src/gui/styles/dark/darkstyle.qss` | OLED QSS |
-| `src/gui/osutils/macutils/AppKitImpl.mm` | Black title bar |
-| `src/core/Config.cpp` | Default theme = `dark` |
-| `src/main.cpp` / `CMakeLists.txt` / Info.plist | App name + bundle ID |
-| `src/gui/Application.cpp` | Single-instance lock isolation + OLED chrome init |
+| `src/gui/styles/oled/*` | OledStyle palette + QSS |
+| `src/gui/MainWindow.ui` / `.cpp` | View → Theme → Dark (OLED) |
+| `src/gui/Application.cpp` | `applyTheme()` branch for `oled` + macOS chrome toggle |
+| `src/gui/osutils/macutils/AppKitImpl.mm` | Title bar black only when OLED active |
+
+## Local-only packaging
+
+| File | Role |
+|------|------|
+| `src/main.cpp` / Info.plist / CMake `PROGNAME` | KeePassXC-OLED app identity |
+| `scripts/deploy-macos-oled.sh` | Bundle + install |
 
 ---
 
