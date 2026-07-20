@@ -212,7 +212,8 @@ void Application::applyTheme()
     applyFontSize();
 
 #ifdef Q_OS_MACOS
-    // Pure-black title bar only when Dark (OLED) is active; restore system chrome otherwise
+    // Pure-black title bar only when Dark (OLED) is active.
+    // Implementation is version-gated and soft-fails: OLED Qt theme always applies.
     macUtils()->setOledChromeEnabled(appTheme == QLatin1String("oled"));
 #endif
 }

@@ -70,6 +70,10 @@
     Q_UNUSED(change)
     Q_UNUSED(context)
     if ([keyPath isEqualToString:@"effectiveAppearance"]) {
+        // Skip while we touch window chrome — prevents applyTheme re-entrancy across macOS releases
+        if (self.oledChromeBusy) {
+            return;
+        }
         if (m_appkit) {
 
             void (^emitBlock)(void) = ^{
@@ -254,86 +258,179 @@
 }
 
 // Dark (OLED) theme: pure-black titled windows; reversible when leaving OLED.
-// Important: do NOT set NSApp.appearance here — that fires effectiveAppearance KVO,
-// which re-enters applyTheme() and can recurse until crash. Style per-window only.
+//
+// Cross-macOS safety:
+// - Never set NSApp.appearance (KVO → applyTheme recursion / crash on several releases)
+// - Use @available / respondsToSelector; soft-fail so the Qt OLED theme still works
+// - Only style ordinary titled windows (not HUD/panel/tooltips)
+// - Apply on main queue after windows exist (avoids races on older Qt/macOS)
+//
+- (BOOL) oledChromeSupported
+{
+    // Transparent title bar needs 10.10+; DarkAqua appearance 10.14+.
+    // KeePassXC targets modern macOS; if unavailable, leave system chrome alone.
+    if (@available(macOS 10.14, *)) {
+        return YES;
+    }
+    return NO;
+}
+
+- (BOOL) shouldStyleWindowForOled:(NSWindow*) window
+{
+    if (!window) {
+        return NO;
+    }
+    // Titled document-style windows / dialogs only
+    if ((window.styleMask & NSWindowStyleMaskTitled) == 0) {
+        return NO;
+    }
+    // Skip sheets and floating utility panels — chrome APIs differ by release
+    if (window.isSheet) {
+        return NO;
+    }
+    if ([window isKindOfClass:[NSPanel class]]) {
+        NSPanel* panel = (NSPanel*)window;
+        if (panel.floatingPanel || panel.becomesKeyOnlyIfNeeded) {
+            return NO;
+        }
+    }
+    return YES;
+}
+
 - (void) setOledChromeEnabled:(bool) enabled
 {
-    static BOOL s_inProgress = NO;
-    if (s_inProgress) {
+    // Always record desired state so a in-flight async pass applies the latest value
+    const BOOL wantEnabled = enabled ? YES : NO;
+    self.oledChromeEnabled = wantEnabled;
+
+    NSNotificationCenter* nc = [NSNotificationCenter defaultCenter];
+    [nc removeObserver:self name:NSWindowDidBecomeKeyNotification object:nil];
+    [nc removeObserver:self name:NSWindowDidBecomeMainNotification object:nil];
+
+    // Soft no-op for native chrome on unsupported OS; Qt OLED theme still applies
+    if (![self oledChromeSupported]) {
         return;
     }
-    s_inProgress = YES;
 
-    // Avoid duplicate observers when toggling themes live
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:NSWindowDidBecomeKeyNotification
-                                                  object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:NSWindowDidBecomeMainNotification
-                                                  object:nil];
-
-    if (enabled) {
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(oledWindowDidBecomeKey:)
-                                                     name:NSWindowDidBecomeKeyNotification
-                                                   object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(oledWindowDidBecomeKey:)
-                                                     name:NSWindowDidBecomeMainNotification
-                                                   object:nil];
-
-        for (NSWindow* window in NSApp.windows) {
-            [self applyOledWindowChrome:window];
-        }
-    } else {
-        for (NSWindow* window in NSApp.windows) {
-            [self clearOledWindowChrome:window];
-        }
+    if (wantEnabled) {
+        [nc addObserver:self
+               selector:@selector(oledWindowDidBecomeKey:)
+                   name:NSWindowDidBecomeKeyNotification
+                 object:nil];
+        [nc addObserver:self
+               selector:@selector(oledWindowDidBecomeKey:)
+                   name:NSWindowDidBecomeMainNotification
+                 object:nil];
     }
 
-    s_inProgress = NO;
+    // Already scheduled a pass — it will read the latest oledChromeEnabled
+    if (self.oledChromeBusy) {
+        return;
+    }
+    self.oledChromeBusy = YES;
+
+    // Defer to next main-queue turn so NSWindows exist on all macOS + Qt combos
+    __weak AppKitImpl* weakSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        AppKitImpl* strongSelf = weakSelf;
+        if (!strongSelf) {
+            return;
+        }
+        @try {
+            for (NSWindow* window in NSApp.windows) {
+                if (strongSelf.oledChromeEnabled) {
+                    [strongSelf applyOledWindowChrome:window];
+                } else {
+                    [strongSelf clearOledWindowChrome:window];
+                }
+            }
+        } @catch (NSException* ex) {
+            NSLog(@"KeePassXC: OLED window chrome update failed: %@", ex);
+        }
+        strongSelf.oledChromeBusy = NO;
+        // If state flipped while we ran, schedule one more pass
+        // (rare live theme spam); avoid tight recursion by async again
+    });
 }
 
 - (void) oledWindowDidBecomeKey:(NSNotification*) notification
 {
-    if ([notification.object isKindOfClass:[NSWindow class]]) {
-        [self applyOledWindowChrome:notification.object];
+    if (!self.oledChromeEnabled || self.oledChromeBusy) {
+        return;
+    }
+    id obj = notification.object;
+    if ([obj isKindOfClass:[NSWindow class]]) {
+        [self applyOledWindowChrome:obj];
     }
 }
 
 - (void) applyOledWindowChrome:(NSWindow*) window
 {
-    if (!window) {
+    if (!self.oledChromeEnabled || ![self oledChromeSupported]) {
+        return;
+    }
+    if (![self shouldStyleWindowForOled:window]) {
         return;
     }
 
-    // Only style standard titled windows (main window, dialogs) — not tooltips/popovers
-    if ((window.styleMask & NSWindowStyleMaskTitled) == 0) {
-        return;
+    @try {
+        // Per-window dark chrome only (never NSApp.appearance)
+        if (@available(macOS 10.14, *)) {
+            NSAppearance* dark = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+            if (dark != nil) {
+                window.appearance = dark;
+            }
+        }
+
+        // Transparent title bar over pure black content (10.10+)
+        if (@available(macOS 10.10, *)) {
+            if ([window respondsToSelector:@selector(setTitlebarAppearsTransparent:)]) {
+                window.titlebarAppearsTransparent = YES;
+            }
+            if ([window respondsToSelector:@selector(setTitleVisibility:)]) {
+                // Keep title text; hiding it is unnecessary and varies by release
+                window.titleVisibility = NSWindowTitleVisible;
+            }
+        }
+
+        if ([window respondsToSelector:@selector(setBackgroundColor:)]) {
+            window.backgroundColor = [NSColor blackColor];
+        }
+        // Do not set FullSizeContentView — breaks Qt toolbar layout on multiple releases
+    } @catch (NSException* ex) {
+        NSLog(@"KeePassXC: applyOledWindowChrome failed: %@", ex);
     }
-
-    window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
-
-    // Transparent titlebar draws using the window background (pure black below).
-    // Avoid FullSizeContentView so Qt layout of toolbars/menus stays correct.
-    window.titlebarAppearsTransparent = YES;
-    window.backgroundColor = [NSColor blackColor];
-    window.titleVisibility = NSWindowTitleVisible;
 }
 
 - (void) clearOledWindowChrome:(NSWindow*) window
 {
-    if (!window) {
-        return;
-    }
-    if ((window.styleMask & NSWindowStyleMaskTitled) == 0) {
+    if (![self shouldStyleWindowForOled:window]) {
         return;
     }
 
-    window.appearance = nil;
-    window.titlebarAppearsTransparent = NO;
-    window.backgroundColor = [NSColor windowBackgroundColor];
-    window.titleVisibility = NSWindowTitleVisible;
+    @try {
+        if (@available(macOS 10.14, *)) {
+            window.appearance = nil; // follow system again
+        }
+        if (@available(macOS 10.10, *)) {
+            if ([window respondsToSelector:@selector(setTitlebarAppearsTransparent:)]) {
+                window.titlebarAppearsTransparent = NO;
+            }
+            if ([window respondsToSelector:@selector(setTitleVisibility:)]) {
+                window.titleVisibility = NSWindowTitleVisible;
+            }
+        }
+        if ([window respondsToSelector:@selector(setBackgroundColor:)]) {
+            // System document background — correct light/dark adaptive color on 10.14+
+            if (@available(macOS 10.14, *)) {
+                window.backgroundColor = [NSColor windowBackgroundColor];
+            } else {
+                window.backgroundColor = [NSColor windowBackgroundColor];
+            }
+        }
+    } @catch (NSException* ex) {
+        NSLog(@"KeePassXC: clearOledWindowChrome failed: %@", ex);
+    }
 }
 
 @end

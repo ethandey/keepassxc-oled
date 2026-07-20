@@ -29,6 +29,9 @@
 - (id) initWithObject:(AppKit*)appkit;
 
 @property (strong) NSRunningApplication *lastActiveApplication;
+// Dark (OLED) native chrome — version-safe, soft-fail on unsupported macOS
+@property (nonatomic, assign) BOOL oledChromeEnabled;
+@property (nonatomic, assign) BOOL oledChromeBusy;
 
 - (pid_t) activeProcessId;
 - (pid_t) ownProcessId;
