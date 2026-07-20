@@ -30,8 +30,9 @@
 
 @property (strong) NSRunningApplication *lastActiveApplication;
 // Dark (OLED) native chrome — version-safe, soft-fail on unsupported macOS
-@property (nonatomic, assign) BOOL oledChromeEnabled;
-@property (nonatomic, assign) BOOL oledChromeBusy;
+// (not named setOledChrome* — that would collide with the C++ trampoline method)
+@property (nonatomic, assign) BOOL oledNativeChromeDesired;
+@property (nonatomic, assign) BOOL oledNativeChromeBusy;
 
 - (pid_t) activeProcessId;
 - (pid_t) ownProcessId;

@@ -71,7 +71,7 @@
     Q_UNUSED(context)
     if ([keyPath isEqualToString:@"effectiveAppearance"]) {
         // Skip while we touch window chrome — prevents applyTheme re-entrancy across macOS releases
-        if (self.oledChromeBusy) {
+        if (self.oledNativeChromeBusy) {
             return;
         }
         if (m_appkit) {
@@ -289,7 +289,7 @@
         return NO;
     }
     if ([window isKindOfClass:[NSPanel class]]) {
-        NSPanel* panel = (NSPanel*)window;
+        NSPanel* panel = static_cast<NSPanel*>(window);
         if (panel.floatingPanel || panel.becomesKeyOnlyIfNeeded) {
             return NO;
         }
@@ -301,7 +301,7 @@
 {
     // Always record desired state so a in-flight async pass applies the latest value
     const BOOL wantEnabled = enabled ? YES : NO;
-    self.oledChromeEnabled = wantEnabled;
+    self.oledNativeChromeDesired = wantEnabled;
 
     NSNotificationCenter* nc = [NSNotificationCenter defaultCenter];
     [nc removeObserver:self name:NSWindowDidBecomeKeyNotification object:nil];
@@ -323,22 +323,19 @@
                  object:nil];
     }
 
-    // Already scheduled a pass — it will read the latest oledChromeEnabled
-    if (self.oledChromeBusy) {
+    // Already scheduled a pass — it will read the latest oledNativeChromeDesired
+    if (self.oledNativeChromeBusy) {
         return;
     }
-    self.oledChromeBusy = YES;
+    self.oledNativeChromeBusy = YES;
 
-    // Defer to next main-queue turn so NSWindows exist on all macOS + Qt combos
-    __weak AppKitImpl* weakSelf = self;
+    // Defer to next main-queue turn so NSWindows exist on all macOS + Qt combos.
+    // Strong self is fine under MRC: AppKitImpl lives for the process.
+    AppKitImpl* strongSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
-        AppKitImpl* strongSelf = weakSelf;
-        if (!strongSelf) {
-            return;
-        }
         @try {
             for (NSWindow* window in NSApp.windows) {
-                if (strongSelf.oledChromeEnabled) {
+                if (strongSelf.oledNativeChromeDesired) {
                     [strongSelf applyOledWindowChrome:window];
                 } else {
                     [strongSelf clearOledWindowChrome:window];
@@ -347,15 +344,13 @@
         } @catch (NSException* ex) {
             NSLog(@"KeePassXC: OLED window chrome update failed: %@", ex);
         }
-        strongSelf.oledChromeBusy = NO;
-        // If state flipped while we ran, schedule one more pass
-        // (rare live theme spam); avoid tight recursion by async again
+        strongSelf.oledNativeChromeBusy = NO;
     });
 }
 
 - (void) oledWindowDidBecomeKey:(NSNotification*) notification
 {
-    if (!self.oledChromeEnabled || self.oledChromeBusy) {
+    if (!self.oledNativeChromeDesired || self.oledNativeChromeBusy) {
         return;
     }
     id obj = notification.object;
@@ -366,7 +361,7 @@
 
 - (void) applyOledWindowChrome:(NSWindow*) window
 {
-    if (!self.oledChromeEnabled || ![self oledChromeSupported]) {
+    if (!self.oledNativeChromeDesired || ![self oledChromeSupported]) {
         return;
     }
     if (![self shouldStyleWindowForOled:window]) {
