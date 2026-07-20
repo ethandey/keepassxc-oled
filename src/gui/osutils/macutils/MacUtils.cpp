@@ -208,9 +208,9 @@ void MacUtils::configureWindowAndHelpMenus(QMainWindow* mainWindow, QMenu* helpM
     return m_appkit->configureWindowAndHelpMenus(mainWindow, helpMenu);
 }
 
-void MacUtils::enableOledChrome()
+void MacUtils::setOledChromeEnabled(bool enabled)
 {
-    m_appkit->enableOledChrome();
+    m_appkit->setOledChromeEnabled(enabled);
 }
 
 void MacUtils::applyOledWindowChrome(QWindow* window)

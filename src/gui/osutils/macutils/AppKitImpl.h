@@ -43,8 +43,9 @@
 - (void) toggleForegroundApp:(bool) foreground;
 - (void) setWindowSecurity:(NSWindow*) window state:(bool) state;
 - (void) configureWindowAndHelpMenus:(QMainWindow*) mainWindow helpMenu:(QMenu*) helpMenu;
-// OLED fork: pure-black window chrome (title bar / traffic lights strip)
-- (void) enableOledChrome;
+// Dark (OLED) theme: pure-black title bar / traffic-light strip (macOS)
+- (void) setOledChromeEnabled:(bool) enabled;
 - (void) applyOledWindowChrome:(NSWindow*) window;
+- (void) clearOledWindowChrome:(NSWindow*) window;
 
 @end

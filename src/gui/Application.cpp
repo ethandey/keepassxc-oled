@@ -26,6 +26,7 @@
 #include "gui/osutils/OSUtils.h"
 #include "gui/styles/dark/DarkStyle.h"
 #include "gui/styles/light/LightStyle.h"
+#include "gui/styles/oled/OledStyle.h"
 
 #include <QFileInfo>
 #include <QFileOpenEvent>
@@ -160,8 +161,6 @@ void Application::bootstrap(const QString& uiLanguage)
 #ifdef Q_OS_MACOS
     // Don't show menu icons on OSX
     QApplication::setAttribute(Qt::AA_DontShowIconsInMenus);
-    // OLED fork: pure-black title bars / traffic-light strip to match dark UI
-    macUtils()->enableOledChrome();
 #endif
 }
 
@@ -177,6 +176,10 @@ void Application::applyTheme()
 #endif
     }
     QPixmapCache::clear();
+    // Clear classic stylesheet so light/dark/oled styles take full effect when switching live
+    if (appTheme != QLatin1String("classic")) {
+        setStyleSheet(QString());
+    }
     if (appTheme == "light") {
         auto* s = new LightStyle;
         setPalette(s->standardPalette());
@@ -184,6 +187,11 @@ void Application::applyTheme()
         m_darkTheme = false;
     } else if (appTheme == "dark") {
         auto* s = new DarkStyle;
+        setPalette(s->standardPalette());
+        setStyle(s);
+        m_darkTheme = true;
+    } else if (appTheme == "oled") {
+        auto* s = new OledStyle;
         setPalette(s->standardPalette());
         setStyle(s);
         m_darkTheme = true;
@@ -202,6 +210,11 @@ void Application::applyTheme()
         }
     }
     applyFontSize();
+
+#ifdef Q_OS_MACOS
+    // Pure-black title bar only when Dark (OLED) is active; restore system chrome otherwise
+    macUtils()->setOledChromeEnabled(appTheme == QLatin1String("oled"));
+#endif
 }
 
 void Application::applyFontSize()

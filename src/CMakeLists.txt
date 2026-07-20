@@ -87,6 +87,7 @@ set(keepassx_SOURCES
         gui/styles/base/BaseStyle.cpp
         gui/styles/dark/DarkStyle.cpp
         gui/styles/light/LightStyle.cpp
+        gui/styles/oled/OledStyle.cpp
         gui/AboutDialog.cpp
         gui/Application.cpp
         gui/CategoryListWidget.cpp

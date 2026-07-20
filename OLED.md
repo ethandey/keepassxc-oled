@@ -1,18 +1,25 @@
-# KeePassXC OLED fork
+# KeePassXC OLED theme (contribution-shaped)
 
-Fork of [KeePassXC](https://github.com/keepassxreboot/keepassxc) **2.7.12** with a pure-black OLED dark theme.
+Based on [KeePassXC](https://github.com/keepassxreboot/keepassxc) **2.7.12**.
 
-## What changed
+## User-facing behaviour (upstream-friendly)
 
-| Area | Change |
-|------|--------|
-| Dark palette | True `#000000` window chrome; near-black (`#0A0A0A` / `#121212`) content surfaces |
-| Default theme | `dark` (was `auto`) |
-| App name | `KeePassXC-OLED` / display **KeePassXC OLED** |
-| Bundle ID | `org.keepassxc.keepassxc-oled` |
-| Config dir | Separate from stock (`~/Library/Application Support/KeePassXC-OLED/`) |
+| Control | Effect |
+|---------|--------|
+| **View → Theme → Dark (OLED)** | Pure-black UI; live apply (no restart) |
+| **View → Theme → Dark** | Stock KeePassXC gray dark (unchanged) |
+| **View → Theme → Light / Auto / Classic** | Unchanged (Classic still restarts) |
+| macOS title bar | Pure black **only** while Dark (OLED) is selected |
 
-Stock `/Applications/KeePassXC.app` is **not** replaced. Install side-by-side as `KeePassXC-OLED.app`.
+Config key: `GUI/ApplicationTheme=oled`
+
+## Local packaging (not for upstream PR)
+
+| Area | Local fork only |
+|------|-----------------|
+| App name | `KeePassXC-OLED` / bundle `org.keepassxc.keepassxc-oled` |
+| Updates | Compiled with `WITH_XC_UPDATECHECK=OFF` |
+| Deploy | `scripts/deploy-macos-oled.sh` → `/Applications/KeePassXC-OLED.app` |
 
 ## Build (macOS arm64)
 

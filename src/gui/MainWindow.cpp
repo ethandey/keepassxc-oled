@@ -1387,17 +1387,14 @@ void MainWindow::showEvent(QShowEvent* event)
 #endif
 
 #ifdef Q_OS_MACOS
-    // OLED fork: re-apply pure-black title bar after the native window exists
-    if (windowHandle()) {
-        macUtils()->applyOledWindowChrome(windowHandle());
-    } else {
-        // winId may not exist until after first show — retry next tick
-        QTimer::singleShot(0, this, [this]() {
-            if (windowHandle()) {
-                macUtils()->applyOledWindowChrome(windowHandle());
-            }
-        });
-    }
+    // NSWindow may not exist until after show; re-sync OLED title-bar chrome once
+    QTimer::singleShot(0, this, []() {
+        auto theme = config()->get(Config::GUI_ApplicationTheme).toString();
+        if (theme == QLatin1String("auto")) {
+            theme = osUtils->isDarkMode() ? QStringLiteral("dark") : QStringLiteral("light");
+        }
+        macUtils()->setOledChromeEnabled(theme == QLatin1String("oled"));
+    });
 #endif
 
     // Restore geometry and window state only on the first showEvent to prevent issues with minimized tray startup
@@ -2023,12 +2020,14 @@ void MainWindow::initViewMenu()
     m_ui->actionThemeAuto->setData("auto");
     m_ui->actionThemeLight->setData("light");
     m_ui->actionThemeDark->setData("dark");
+    m_ui->actionThemeOled->setData("oled");
     m_ui->actionThemeClassic->setData("classic");
 
     auto themeActions = new QActionGroup(this);
     themeActions->addAction(m_ui->actionThemeAuto);
     themeActions->addAction(m_ui->actionThemeLight);
     themeActions->addAction(m_ui->actionThemeDark);
+    themeActions->addAction(m_ui->actionThemeOled);
     themeActions->addAction(m_ui->actionThemeClassic);
 
     auto theme = config()->get(Config::GUI_ApplicationTheme).toString();
@@ -2039,9 +2038,13 @@ void MainWindow::initViewMenu()
         }
     }
 
-    connect(themeActions, &QActionGroup::triggered, this, [this, theme](QAction* action) {
-        config()->set(Config::GUI_ApplicationTheme, action->data());
-        if ((action->data() == "classic" || theme == "classic") && action->data() != theme) {
+    // Light / Dark / Dark (OLED) apply live via applyTheme().
+    // Classic uses a different style path and still requires a restart.
+    connect(themeActions, &QActionGroup::triggered, this, [this](QAction* action) {
+        const auto previous = config()->get(Config::GUI_ApplicationTheme).toString();
+        const auto next = action->data().toString();
+        config()->set(Config::GUI_ApplicationTheme, next);
+        if ((next == QLatin1String("classic") || previous == QLatin1String("classic")) && next != previous) {
             restartApp(tr("You must restart the application to apply this setting. Would you like to restart now?"));
         } else {
             kpxcApp->applyTheme();

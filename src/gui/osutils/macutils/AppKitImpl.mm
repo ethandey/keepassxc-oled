@@ -253,24 +253,45 @@
     NSApp.helpMenu = helpMenu->toNSMenu();
 }
 
-// OLED fork: force dark aqua app-wide and pure-black titled windows
-- (void) enableOledChrome
+// Dark (OLED) theme: pure-black titled windows; reversible when leaving OLED.
+// Important: do NOT set NSApp.appearance here — that fires effectiveAppearance KVO,
+// which re-enters applyTheme() and can recurse until crash. Style per-window only.
+- (void) setOledChromeEnabled:(bool) enabled
 {
-    // Force dark system chrome (traffic lights, menus) regardless of OS light mode
-    NSApp.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
-
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(oledWindowDidBecomeKey:)
-                                                 name:NSWindowDidBecomeKeyNotification
-                                               object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(oledWindowDidBecomeKey:)
-                                                 name:NSWindowDidBecomeMainNotification
-                                               object:nil];
-
-    for (NSWindow* window in NSApp.windows) {
-        [self applyOledWindowChrome:window];
+    static BOOL s_inProgress = NO;
+    if (s_inProgress) {
+        return;
     }
+    s_inProgress = YES;
+
+    // Avoid duplicate observers when toggling themes live
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:NSWindowDidBecomeKeyNotification
+                                                  object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:NSWindowDidBecomeMainNotification
+                                                  object:nil];
+
+    if (enabled) {
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(oledWindowDidBecomeKey:)
+                                                     name:NSWindowDidBecomeKeyNotification
+                                                   object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(oledWindowDidBecomeKey:)
+                                                     name:NSWindowDidBecomeMainNotification
+                                                   object:nil];
+
+        for (NSWindow* window in NSApp.windows) {
+            [self applyOledWindowChrome:window];
+        }
+    } else {
+        for (NSWindow* window in NSApp.windows) {
+            [self clearOledWindowChrome:window];
+        }
+    }
+
+    s_inProgress = NO;
 }
 
 - (void) oledWindowDidBecomeKey:(NSNotification*) notification
@@ -293,12 +314,25 @@
 
     window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
 
-    // Transparent titlebar draws using the window background (pure black below)
+    // Transparent titlebar draws using the window background (pure black below).
     // Avoid FullSizeContentView so Qt layout of toolbars/menus stays correct.
     window.titlebarAppearsTransparent = YES;
     window.backgroundColor = [NSColor blackColor];
+    window.titleVisibility = NSWindowTitleVisible;
+}
 
-    // Keep the window title text visible in the title bar
+- (void) clearOledWindowChrome:(NSWindow*) window
+{
+    if (!window) {
+        return;
+    }
+    if ((window.styleMask & NSWindowStyleMaskTitled) == 0) {
+        return;
+    }
+
+    window.appearance = nil;
+    window.titlebarAppearsTransparent = NO;
+    window.backgroundColor = [NSColor windowBackgroundColor];
     window.titleVisibility = NSWindowTitleVisible;
 }
 
@@ -391,9 +425,9 @@ void AppKit::configureWindowAndHelpMenus(QMainWindow* window, QMenu* helpMenu)
     [static_cast<id>(self) configureWindowAndHelpMenus:window helpMenu:helpMenu];
 }
 
-void AppKit::enableOledChrome()
+void AppKit::setOledChromeEnabled(bool enabled)
 {
-    [static_cast<id>(self) enableOledChrome];
+    [static_cast<id>(self) setOledChromeEnabled:enabled];
 }
 
 void AppKit::applyOledWindowChrome(QWindow* window)
