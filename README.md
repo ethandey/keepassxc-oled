@@ -1,61 +1,123 @@
-# <img src="https://keepassxc.org/assets/img/keepassxc.svg" width="40" height="40"/> KeePassXC
-[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/6326/badge)](https://bestpractices.coreinfrastructure.org/projects/6326)
-[![TeamCity Build Status](https://ci.keepassxc.org/app/rest/builds/buildType:\(project:KeepassXC\)/statusIcon)](https://ci.keepassxc.org/?guest=1)
-[![codecov](https://codecov.io/gh/keepassxreboot/keepassxc/branch/develop/graph/badge.svg)](https://codecov.io/gh/keepassxreboot/keepassxc)
-[![GitHub release](https://img.shields.io/github/release/keepassxreboot/keepassxc)](https://github.com/keepassxreboot/keepassxc/releases/)
+# KeePassXC OLED (mac)
 
-[![Matrix community channel](https://img.shields.io/matrix/keepassxc:matrix.org?label=Community%20channel)](https://app.element.io/#/room/#keepassxc:mozilla.org)
-[![Matrix development channel](https://img.shields.io/matrix/keepassxc-dev:matrix.org?label=Development%20channel)](https://app.element.io/#/room/#keepassxc-dev:mozilla.org)
+Custom **KeePassXC 2.7.12** build with pure-black OLED theme + Touch ID (Quick Unlock).  
+Installed as **`/Applications/KeePassXC-OLED.app`** only. Stock KeePassXC is removed.
 
-[KeePassXC](https://keepassxc.org) is a modern, secure, and open-source password manager that stores and manages your most sensitive information. You can run KeePassXC on Windows, macOS, and Linux systems. KeePassXC is for people with extremely high demands of secure personal data management. It saves many different types of information, such as usernames, passwords, URLs, attachments, and notes in an offline, encrypted file that can be stored in any location, including private and public cloud solutions. For easy identification and management, user-defined titles and icons can be specified for entries. In addition, entries are sorted into customizable groups. An integrated search function allows you to use advanced patterns to easily find any entry in your database. A customizable, fast, and easy-to-use password generator utility allows you to create passwords with any combination of characters or easy to remember passphrases.
+**Source of truth:** this directory (`side-projects/devices/mac/keepass`)  
+**GitHub fork:** https://github.com/ethandey/keepassxc-oled (`oled-theme` branch)
 
-## Quick Start
-The [QuickStart Guide](https://keepassxc.org/docs/KeePassXC_GettingStarted.html) gets you started using KeePassXC on your Windows, macOS, or Linux computer using pre-compiled binaries from the [downloads page](https://keepassxc.org/download). Additionally, individual Linux distributions may ship their own versions, so please check your distribution's package list to see if KeePassXC is available. Detailed documentation is available in the [User Guide](https://keepassxc.org/docs/KeePassXC_UserGuide.html).
+---
 
-## Features List
-KeePassXC has numerous features for novice and power users alike. Our goal is to create an application that can be used by anyone while still offering advanced features to those that need them.
+## Is this “just a theme dropdown”?
 
-### Basic
-* Create, open, and save databases in the KDBX format (KeePass-compatible with KDBX4 and KDBX3)
-* Store sensitive information in entries that are organized by groups
-* Search for entries
-* Password generator
-* Auto-Type passwords into applications
-* Browser integration with Google Chrome, Mozilla Firefox, Microsoft Edge, Chromium, Vivaldi, Brave, and Tor-Browser
-* Support for passkeys using the browser integration
-* Entry icon download
-* Import databases from CSV, 1Password, Bitwarden, Proton Pass, and KeePass1 formats
+**No.** Stock KeePassXC only has:
 
-### Advanced
-* Database reports (password health, HIBP, and statistics)
-* Database export to CSV, XML, and HTML formats
-* TOTP storage and generation
-* Field references between entries
-* File attachments and custom attributes
-* Entry history and data restoration
-* YubiKey/OnlyKey challenge-response support
-* Command line interface (keepassxc-cli)
-* Auto-Open databases
-* KeeShare shared databases (import, export, and synchronize)
-* SSH Agent integration
-* FreeDesktop.org Secret Service (replace Gnome keyring, etc.)
-* Additional encryption choices: Twofish and ChaCha20
+| Setting | What it does |
+|---------|----------------|
+| View → Theme → **Dark** | Built-in dark **gray** palette (`#3B3B3D` chrome, not pure black) |
+| View → Theme → Light / Classic / Auto | Other stock looks |
 
-For a full list of changes, read the [CHANGELOG](CHANGELOG.md) document. \
-For a full list of keyboard shortcuts, see [KeyboardShortcuts.adoc](./docs/topics/KeyboardShortcuts.adoc)
+There is **no** OLED / pure-black option in settings.  
+What we did is a **forked app** with code changes to:
 
-## Building KeePassXC
+1. **Dark palette + QSS** → true `#000000` / near-black surfaces  
+2. **macOS title bar** → transparent black traffic-light strip  
+3. **App identity** → `KeePassXC-OLED` so it can sit next to (or replace) stock  
+4. **Update checks** → compiled **off** (`WITH_XC_UPDATECHECK=OFF`)
 
-Detailed instructions are available in the [Build and Install](./INSTALL.md) page and in the [Wiki](https://github.com/keepassxreboot/keepassxc/wiki/Building-KeePassXC).
+So: theme dropdown still exists, but **Dark** in *this* build is our OLED palette, not stock gray.
 
-## Contributing
+---
 
-We are always looking for suggestions on how to improve KeePassXC. If you find any bugs or have an idea for a new feature, please let us know by opening a report in the [issue tracker](https://github.com/keepassxreboot/keepassxc/issues) on GitHub, or join us on [Matrix community channel](https://matrix.to/#/!zUxwGnFkUyycpxeHeM:matrix.org?via=matrix.org) or [Matrix development channel](https://matrix.to/#/!RhJPJPGwQIFVQeXqZa:matrix.org?via=matrix.org), or on IRC in [Libera.Chat](https://web.libera.chat/) channels #keepassxc and #keepassxc-dev.
+## How invasive is this to the system?
 
-You may directly contribute your own code by submitting a pull request. Please read the [CONTRIBUTING](.github/CONTRIBUTING.md) document for further information.
+| Touch | Risk | Notes |
+|-------|------|--------|
+| `/Applications/KeePassXC-OLED.app` | Low | Your custom app only |
+| Removed `/Applications/KeePassXC.app` | Low | Stock uninstalled |
+| `~/Library/Application Support/KeePassXC OLED/` | Low | Config for OLED only |
+| Homebrew build deps (`~/.homebrew`: qt@5, botan, …) | Low | User-space; not required at runtime if app is deployed |
+| SIP / system frameworks / other apps | **None** | Untouched |
+| Database `.kdbx` format | **None** | Standard; works with other KeePassXC clients |
 
-Contributors are required to adhere to the project's [Code of Conduct](CODE-OF-CONDUCT.md).
+**Not** a system theme, login item, kernel extension, or patched system KeePass.
 
-## License
+---
 
-KeePassXC code is licensed under GPL-2 or GPL-3. Additional licensing for third-party files is detailed in [COPYING](./COPYING).
+## Installed layout
+
+```
+/Applications/KeePassXC-OLED.app     ← use this
+# stock KeePassXC.app                ← removed
+
+~/Library/Application Support/KeePassXC OLED/keepassxc.ini
+~/Library/Caches/KeePassXC OLED/     (local state / last DB path)
+```
+
+Stock’s old config may still live under `~/Library/Application Support/KeePassXC/` — harmless leftover prefs.
+
+---
+
+## Updates
+
+- **OLED build:** update checks **disabled at compile time**.  
+- It will **not** auto-download official KeePassXC upgrades (those would wipe OLED styling).  
+- To “update”: rebase/merge upstream tags in this fork, rebuild, redeploy.
+
+---
+
+## Touch ID (Quick Unlock)
+
+1. Open **KeePassXC OLED**  
+2. Unlock once with master password  
+3. **Tools → Settings → Security → Convenience**  
+   → Enable **database quick unlock (Touch ID / …)**  
+4. Lock (⌘L) → unlock with Touch ID  
+
+First unlock after quit still needs the password.
+
+---
+
+## Rebuild / redeploy
+
+```bash
+export PATH="$HOME/.homebrew/bin:$PATH"
+cd ~/side-projects/devices/mac/keepass
+
+cmake -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH="$HOME/.homebrew/opt/qt@5;$HOME/.homebrew" \
+  -DWITH_XC_ALL=ON \
+  -DWITH_TESTS=OFF \
+  -DWITH_XC_DOCS=OFF \
+  -DWITH_XC_UPDATECHECK=OFF \
+  -DKEEPASSXC_BUILD_TYPE=Release
+
+cmake --build build -j"$(sysctl -n hw.ncpu)"
+./scripts/deploy-macos-oled.sh
+```
+
+`deploy-macos-oled.sh` runs `macdeployqt`, rewrites plugin dylib paths, ad-hoc signs, and installs to `/Applications/KeePassXC-OLED.app`.
+
+More detail: [OLED.md](./OLED.md)
+
+---
+
+## OLED-specific code (diff surface)
+
+| File | Role |
+|------|------|
+| `src/gui/styles/dark/DarkStyle.cpp` | Pure-black palette |
+| `src/gui/styles/dark/darkstyle.qss` | OLED QSS |
+| `src/gui/osutils/macutils/AppKitImpl.mm` | Black title bar |
+| `src/core/Config.cpp` | Default theme = `dark` |
+| `src/main.cpp` / `CMakeLists.txt` / Info.plist | App name + bundle ID |
+| `src/gui/Application.cpp` | Single-instance lock isolation + OLED chrome init |
+
+---
+
+## Safety / rollback
+
+- **Use stock again:** install official DMG/cask; your `.kdbx` still works.  
+- **Remove OLED only:** `rm -rf /Applications/KeePassXC-OLED.app`  
+- **This repo:** full source to rebuild anytime.
